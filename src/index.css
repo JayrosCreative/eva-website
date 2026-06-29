@@ -1,0 +1,53 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --burgundy: #5C1A1A;
+  --rose: #E8D5D3;
+  --blush: #F5EDEC;
+  --accent: #C4726A;
+  --dark: #2C1010;
+  --muted: #9A6A6A;
+  --white: #ffffff;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: var(--blush);
+  color: var(--dark);
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  text-align: left;
+  min-height: 100svh;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: normal;
+}
