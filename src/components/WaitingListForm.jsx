@@ -46,6 +46,7 @@ export default function WaitingListForm() {
       })
 
     if (dbError) {
+      console.error('[EVĀ] Supabase insert error:', dbError)
       submitting.current = false
       if (dbError.code === '23505') {
         setStatus('duplicate')
