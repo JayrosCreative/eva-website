@@ -1,6 +1,9 @@
 import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+
+const SUPABASE_URL = 'https://iuzdkvzuipbjidunfpuu.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1emRrdnp1aXBiamlkdW5mcHV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3ODE4ODUsImV4cCI6MjA5NzM1Nzg4NX0.xKxi0qxOlP6ycAVWSPxV4MzHWhNE1FrZHDyN3NAEAHI'
+const EMAIL_FN = 'https://iuzdkvzuipbjidunfpuu.supabase.co/functions/v1/hyper-service'
 
 const INTERESTS = [
   { id: 'eva_focus', label: 'EVĀ Focus' },
@@ -8,14 +11,31 @@ const INTERESTS = [
 ]
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const EDGE_FN = 'https://iuzdkvzuipbjidunfpuu.supabase.co/functions/v1/hyper-service'
+
+async function insertWaitingList(payload) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/waiting_list`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    return { error: err }
+  }
+  return { error: null }
+}
 
 export default function WaitingListForm() {
   const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
   const [interests, setInterests] = useState([])
   const [consent, setConsent] = useState(false)
-  const [status, setStatus] = useState('idle') // idle | loading | success | duplicate | error
+  const [status, setStatus] = useState('idle')
   const [fieldError, setFieldError] = useState('')
   const submitting = useRef(false)
 
@@ -37,16 +57,16 @@ export default function WaitingListForm() {
     submitting.current = true
     setStatus('loading')
 
-    const { error: dbError } = await supabase
-      .from('waiting_list')
-      .insert({
-        first_name: firstName.trim(),
-        email: email.trim().toLowerCase(),
-        interested_in: interests,
-      })
+    const payload = {
+      first_name: firstName.trim(),
+      email: email.trim().toLowerCase(),
+      interested_in: interests,
+    }
+
+    const { error: dbError } = await insertWaitingList(payload)
 
     if (dbError) {
-      console.error('[EVĀ] Supabase insert error:', dbError)
+      console.error('[EVĀ] Insert error:', dbError)
       submitting.current = false
       if (dbError.code === '23505') {
         setStatus('duplicate')
@@ -56,19 +76,12 @@ export default function WaitingListForm() {
       return
     }
 
-    try {
-      await fetch(EDGE_FN, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          first_name: firstName.trim(),
-          email: email.trim().toLowerCase(),
-          interested_in: interests,
-        }),
-      })
-    } catch (err) {
-      console.error('[EVĀ] Confirmation email failed:', err)
-    }
+    // Send confirmation email — fail silently if it errors
+    fetch(EMAIL_FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(err => console.error('[EVĀ] Email error:', err))
 
     submitting.current = false
     setStatus('success')
